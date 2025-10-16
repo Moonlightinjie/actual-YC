@@ -1,45 +1,55 @@
 import streamlit as st
+import json
+import os
 
-st.set_page_config(page_title="CSEC Past Papers")
-st.title("📄 CSEC Past Papers Hub")
+st.set_page_config(page_title="The CSEC Hub")
+st.title("THE CSEC HUB")
 
-# Sidebar filters
-subjects = ["Mathematics", "Physics", "Chemistry", "Biology", "Information Technology"]
+subjects = ["Mathematics", "Physics", "Chemistry"] 
 selected_subject = st.sidebar.selectbox("Select Subject", subjects)
 
-years = [str(y) for y in range(2015, 2026)]
+years = ["2022", "2021", "2020"] 
 selected_year = st.sidebar.selectbox("Select Year", years)
 
-papers = ["Paper 1", "Paper 2", "Paper 3"]
-selected_paper = st.sidebar.selectbox("Select Paper", papers)
-
-# Mock database of past papers (replace links with actual PDFs)
-past_papers = {
-    "Mathematics": {
-        "2020": {
-            "Paper 1": "https://example.com/math2020p1.pdf",
-            "Paper 2": "https://example.com/math2020p2.pdf",
-            "Paper 3": "https://example.com/math2020p3.pdf"
-        }
-    },
-    "Physics": {
-        "2020": {
-            "Paper 1": "https://example.com/physics2020p1.pdf",
-            "Paper 2": "https://example.com/physics2020p2.pdf",
-            "Paper 3": "https://example.com/physics2020p3.pdf"
-        }
-    }
-}
-
-# Display the selected paper
-link = past_papers.get(selected_subject, {}).get(selected_year, {}).get(selected_paper)
-if link:
-    st.write(f"**{selected_subject} {selected_year} {selected_paper}**")
-    st.markdown(f"[📄 View/Download PDF]({link})")
+questions_path = f"data/questions/{selected_subject.lower()}_{selected_year}.json"
+if os.path.exists(questions_path):
+    with open(questions_path, "r") as f:
+        data = json.load(f)
+    topics = sorted(list(set(q["topic"] for q in data["questions"])))
 else:
-    st.write("No past paper available for this selection yet.")
+    data = {"questions": []}
+    topics = []
 
-# Optional: brief notes section
-st.subheader("Notes / Hints")
-st.write("You can add short notes or tips here for each subject or paper.")
+selected_topic = st.sidebar.selectbox("Filter by Topic", ["All"] + topics)
+
+pdf_path = f"data/papers/{selected_subject.lower()}_{selected_year}.pdf"
+if os.path.exists(pdf_path):
+    with open(pdf_path, "rb") as f:
+        pdf_data = f.read()
+    st.download_button("Download Full Paper PDF", pdf_data, file_name=f"{selected_subject}_{selected_year}.pdf")
+    
+    # Embed PDF
+    st.components.v1.html(f"""
+        <embed src="{pdf_path}" width="700" height="1000" type="application/pdf">
+    """, height=1000)
+else:
+    st.warning("PDF not found!")
+
+st.header("Practice Questions")
+for q in data["questions"]:
+    if selected_topic != "All" and q["topic"] != selected_topic:
+        continue
+    
+    st.subheader(f"Q{q['question_number']} ({q['topic']})")
+    st.write(q["text"])
+    
+    user_answer = st.text_input(f"Your Answer for Q{q['question_number']}", key=f"{q['topic']}_{q['question_number']}")
+    
+    if user_answer:
+        if user_answer.strip() == q["answer"]:
+            st.success("✅ Correct!")
+        else:
+            st.error("❌ Incorrect.")
+        st.info(f"Solution: {q['solution']}")
+
 
