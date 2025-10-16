@@ -11,7 +11,7 @@ selected_subject = st.sidebar.selectbox("Select Subject", subjects)
 years = ["2022", "2021", "2020"] 
 selected_year = st.sidebar.selectbox("Select Year", years)
 
-questions_path = f"data/questions/{selected_subject.lower()}_{selected_year}.json"
+questions_path = f"data/questions/{selected_subject.lower()}_jun{selected_year}.json"
 if os.path.exists(questions_path):
     with open(questions_path, "r") as f:
         data = json.load(f)
